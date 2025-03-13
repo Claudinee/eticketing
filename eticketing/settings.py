@@ -37,8 +37,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-  'rest_framework',  # Add Django REST Framework
-    'eticketing',         # Add your tickets app
+    'rest_framework',  # Add Django REST Framework
+    'tickets.apps.TicketsConfig',
+    #'tickets',         # Add your tickets app
 ]
 
 
