@@ -1,20 +1,23 @@
 from rest_framework import viewsets, status
 from rest_framework.response import Response
 from .models import Ticket, Organizer, Transaction
-from .serializers import TransactionSerializer,OrganizerSerializer,TicketSerializer
+from .serializers import TransactionSerializer, OrganizerSerializer, TicketSerializer
 import random
 import string
 from django.core.mail import send_mail
+from decimal import Decimal  # Import Decimal
 
 
 class OrganizerViewSet(viewsets.ModelViewSet):
     queryset = Organizer.objects.all()
     serializer_class = OrganizerSerializer
 
+
 class TicketViewSet(viewsets.ModelViewSet):
     queryset = Ticket.objects.all()
     serializer_class = TicketSerializer
-    
+
+
 class TransactionViewSet(viewsets.ModelViewSet):
     queryset = Transaction.objects.all()
     serializer_class = TransactionSerializer

@@ -13,5 +13,5 @@ class TicketSerializer(serializers.ModelSerializer):
 
 class TransactionSerializer(serializers.ModelSerializer):
     class Meta:
-        model = Transaction
-        fields = '__all__'
+          model = Transaction
+    fields = '__all__'
