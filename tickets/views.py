@@ -47,18 +47,28 @@ class TransactionViewSet(viewsets.ModelViewSet):
             organizer=organizer
         )
 
-        # Create the transaction
+        # Get and validate amount
         amount = request.data.get('amount')
         if not amount:
             return Response({"error": "Amount is required."}, status=status.HTTP_400_BAD_REQUEST)
 
+        try:
+            amount = Decimal(amount)  # Convert to Decimal for accuracy
+        except Exception:
+            return Response({"error": "Invalid amount format."}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Create the transaction
         transaction = Transaction.objects.create(
             ticket=ticket,
             amount=amount
         )
 
+        # Ensure `total_amount` is not None before updating
+        if organizer.total_amount is None:
+            organizer.total_amount = Decimal(0)
+
         # Update the organizer's total amount
-        organizer.total_amount += float(amount)
+        organizer.total_amount += amount
         organizer.save()
 
         # Mark the ticket as paid
@@ -68,7 +78,7 @@ class TransactionViewSet(viewsets.ModelViewSet):
         # Notify the organizer via email
         send_mail(
             'New Ticket Purchase',
-            f'A ticket has been purchased for {ticket.personal_id}. Amount: {amount}',
+            f'Hello A ticket has been purchased for {ticket.personal_id}. Amount: {amount}',
             'noreply@eticketing.com',
             [organizer.email],
             fail_silently=False,
@@ -76,4 +86,5 @@ class TransactionViewSet(viewsets.ModelViewSet):
 
         # Return the transaction details
         serializer = self.get_serializer(transaction)
+        print("Serializer data:", serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
