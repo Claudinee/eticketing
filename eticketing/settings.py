@@ -39,7 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',  # Add Django REST Framework
     'tickets.apps.TicketsConfig',
-    #'tickets',         # Add your tickets app
+    # 'tickets',         # Add your tickets app
 ]
 
 

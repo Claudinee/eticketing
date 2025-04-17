@@ -11,8 +11,8 @@ class Organizer(models.Model):
         return self.name
 
 class Ticket(models.Model):
-    ticket_number = models.CharField(max_length=20, unique=True)
-    personal_id = models.CharField(max_length=20)  # NID or Passport
+    ticket_number = models.CharField(max_length=16, unique=True)
+    personal_id = models.CharField(max_length=16, unique=True)  # NID or Passport
     is_paid = models.BooleanField(default=False)
     organizer = models.ForeignKey(Organizer, on_delete=models.CASCADE, related_name='tickets')
 
