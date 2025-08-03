@@ -1,23 +1,7 @@
-"""
-URL configuration for eticketing project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.1/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
-"""
 from django.contrib import admin
-from django.urls import path, include  # Add 'include' here
-from rest_framework.routers import DefaultRouter  # Import DefaultRouter
-from tickets import views  # Import your views
+from django.urls import path, include
+from rest_framework.routers import DefaultRouter
+from tickets import views  # Import your views module
 
 # Create a router and register your viewsets
 router = DefaultRouter()
@@ -25,8 +9,13 @@ router.register(r'organizers', views.OrganizerViewSet)
 router.register(r'tickets', views.TicketViewSet)
 router.register(r'transactions', views.TransactionViewSet)
 
-# Define the URL patterns
 urlpatterns = [
-    path('admin/', admin.site.urls),  # Default admin route
-    path('api/', include(router.urls)),  # Add your API routes
+    path('admin/', admin.site.urls),
+    path('', views.home_view, name='home'),  # Frontend homepage
+    path('api/', include(router.urls)),  # All API endpoints under /api/
+    
+    # Additional API endpoints if needed
+    path('api/organizers/', views.OrganizerViewSet.as_view({'get': 'list'}), name='organizers-list'),
+    path('api/tickets/', views.TicketViewSet.as_view({'get': 'list'}), name='tickets-list'),
+    path('api/transactions/', views.TransactionViewSet.as_view({'post': 'create'}), name='transactions-create'),
 ]

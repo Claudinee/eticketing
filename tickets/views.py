@@ -5,11 +5,18 @@ from .serializers import TransactionSerializer, OrganizerSerializer, TicketSeria
 import random
 import string
 from decimal import Decimal
+from django.shortcuts import render  # Add this import at the top
 
 # QR code and email imports
 import qrcode
 from io import BytesIO
 from django.core.mail import EmailMessage
+
+
+# Add this new view function before your ViewSets
+def home_view(request):
+    """Render the frontend template"""
+    return render(request, 'index.html')
 
 
 class OrganizerViewSet(viewsets.ModelViewSet):
