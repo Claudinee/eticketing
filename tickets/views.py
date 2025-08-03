@@ -4,8 +4,12 @@ from .models import Ticket, Organizer, Transaction
 from .serializers import TransactionSerializer, OrganizerSerializer, TicketSerializer
 import random
 import string
-from django.core.mail import send_mail
 from decimal import Decimal
+
+# QR code and email imports
+import qrcode
+from io import BytesIO
+from django.core.mail import EmailMessage
 
 
 class OrganizerViewSet(viewsets.ModelViewSet):
@@ -81,14 +85,24 @@ class TransactionViewSet(viewsets.ModelViewSet):
         ticket.is_paid = True
         ticket.save()
 
-        # Send notification email
-        send_mail(
-            'New Ticket Purchase',
-            f'Hello, a ticket has been purchased for {ticket.personal_id}. Amount: {amount}',
-            'noreply@eticketing.com',
-            [organizer.email],
-            fail_silently=False,
+        # ----------------------------------------
+        # Send notification email with QR code
+        # ----------------------------------------
+        qr_data = f"Ticket Number: {ticket.ticket_number}\nPersonal ID: {ticket.personal_id}"
+        qr = qrcode.make(qr_data)
+
+        buffer = BytesIO()
+        qr.save(buffer, format='PNG')
+        buffer.seek(0)
+
+        email = EmailMessage(
+            subject='New Ticket Purchase',
+            body=f'Hello, a ticket has been purchased for {ticket.personal_id}. Amount: {amount}',
+            from_email='noreply@eticketing.com',
+            to=[organizer.email],
         )
+        email.attach(f"{ticket.ticket_number}.png", buffer.read(), 'image/png')
+        email.send(fail_silently=False)
 
         # Serialize and return the transaction
         serializer = self.get_serializer(transaction)
