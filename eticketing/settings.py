@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'rest_framework',  # Add Django REST Framework
+    'rest_framework.authtoken',
     'tickets.apps.TicketsConfig',
     # 'tickets',         # Add your tickets app
 ]
