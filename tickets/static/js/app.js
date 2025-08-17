@@ -1,9 +1,67 @@
-// Add this navigation functionality at the top of your existing app.js
 document.addEventListener('DOMContentLoaded', function() {
-    // Navigation handling
+    const ticketCategory = document.getElementById('ticket_category');
+    const amountInput = document.getElementById('amount');
+
+    // Prices per category
+    const categoryPrices = {
+        VVIP: 15000,
+        VIP: 10000,
+        REGULAR: 5000,
+        ADULT: 5000,
+        CHILD: 2500
+    };
+
+    // Update price when category is selected
+    ticketCategory.addEventListener('change', function() {
+        const selectedCategory = this.value;
+        amountInput.value = categoryPrices[selectedCategory] || '';
+    });
+
+    // Ticket form submission
+    const ticketForm = document.getElementById('ticketForm');
+    ticketForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        // Validate fields
+        const organizerValue = document.getElementById('organizer').value;
+        const personalIdValue = document.getElementById('personal_id').value;
+        if (!ticketCategory.value || !amountInput.value || !organizerValue || !personalIdValue) {
+            alert('Please fill all required fields.');
+            return;
+        }
+
+        const formData = {
+            organizer: organizerValue,
+            personal_id: personalIdValue,
+            category: ticketCategory.value,
+            amount: amountInput.value
+        };
+
+        try {
+            const response = await axios.post('/api/transactions/', formData, {
+                headers: { 'Content-Type': 'application/json' }
+            });
+
+            // Get ticket number and category from API response
+            const ticketNumber = response.data.ticket_number || 'N/A';
+            const category = response.data.category || 'N/A';
+
+            alert(`🎉 Ticket purchased successfully!\nTicket Number: ${ticketNumber}\nCategory: ${category}\nPrice: RWF ${amountInput.value}`);
+
+            // Reset form and set default price
+            ticketForm.reset();
+            amountInput.value = '';
+        } catch (error) {
+            console.error(error);
+            const errorMessage = error.response?.data?.error || 'Failed to purchase ticket. Please try again!';
+            alert(`❌ Error: ${errorMessage}`);
+        }
+    });
+
+    // Navigation section toggle
     const navLinks = document.querySelectorAll('.nav-link');
     const sections = {
-        home: document.getElementById('ticketForm').closest('section'),
+        home: document.getElementById('ticket-section'),
         events: document.getElementById('events-section'),
         contact: document.getElementById('contact-section')
     };
@@ -11,17 +69,15 @@ document.addEventListener('DOMContentLoaded', function() {
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             e.preventDefault();
-            
-            // Update active state
-            navLinks.forEach(navLink => navLink.classList.remove('active'));
+            navLinks.forEach(nav => nav.classList.remove('active'));
             this.classList.add('active');
-            
-            // Show/hide sections
+
             const sectionToShow = this.dataset.section;
-            Object.values(sections).forEach(section => {
-                section.classList.add('d-none');
-            });
+            Object.values(sections).forEach(section => section.classList.add('d-none'));
             sections[sectionToShow].classList.remove('d-none');
+
+            // Scroll to top for better UX
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         });
     });
 
@@ -31,34 +87,7 @@ document.addEventListener('DOMContentLoaded', function() {
         contactForm.addEventListener('submit', function(e) {
             e.preventDefault();
             alert('Thank you for your message! We will contact you soon.');
-            this.reset();
+            contactForm.reset();
         });
-    }
-});
-
-// Your existing ticket form JS remains below...
-const AUTH_TOKEN = "c5458fe371215017510c55b1b88e0af28929d340"; // Get this from python manage.py shell
-document.getElementById('ticketForm').addEventListener('submit', async (e) => {
-    e.preventDefault();
-    
-    const formData = {
-        organizer: document.getElementById('organizer').value,
-        personal_id: document.getElementById('personal_id').value,
-        amount: document.getElementById('amount').value
-    };
-
-    try {
-        const response = await axios.post('/api/transactions/', formData, {
-            headers: {
-                'Authorization': 'c5458fe371215017510c55b1b88e0af28929d340', // Replace with your token
-                'Content-Type': 'application/json'
-            }
-        });
-        
-        alert(`Ticket purchased successfully! Ticket Number: ${response.data.ticket.ticket_number}`);
-        document.getElementById('ticketForm').reset();
-    } catch (error) {
-        alert(`Error: ${error.response?.data?.error || 'Failed to purchase ticket'}`);
-        console.error(error);
     }
 });

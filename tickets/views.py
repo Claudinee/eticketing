@@ -47,10 +47,10 @@ class TransactionViewSet(viewsets.ModelViewSet):
     serializer_class = TransactionSerializer
 
     def create(self, request):
-        # Generate a random ticket number
+        # Generate random ticket number
         ticket_number = ''.join(random.choices(string.ascii_uppercase + string.digits, k=10))
 
-        # Fetch the organizer
+        # Fetch organizer
         organizer_id = request.data.get('organizer')
         if not organizer_id:
             return Response({"error": "Organizer ID is required."}, status=status.HTTP_400_BAD_REQUEST)
@@ -59,13 +59,26 @@ class TransactionViewSet(viewsets.ModelViewSet):
         except Organizer.DoesNotExist:
             return Response({"error": "Organizer does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
-        # Check if this is a child ticket
-        is_child = request.data.get('is_child', False)
+        # Fetch category and price
+        category = request.data.get('category')
+        category_prices = {
+            'VVIP': Decimal('15000'),
+            'VIP': Decimal('10000'),
+            'REGULAR': Decimal('5000'),
+            'ADULT': Decimal('5000'),
+            'CHILD': Decimal('2500')
+        }
+        if not category or category not in category_prices:
+            return Response({"error": "Valid ticket category is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        personal_id = request.data.get('personal_id')  # adult ID
-        dependent_id = request.data.get('dependent_id')  # child ID
+        amount = category_prices[category]
 
-        if is_child:
+        # Determine if ticket is for child
+        dependent_id = request.data.get('dependent_id')
+        personal_id = request.data.get('personal_id')
+
+        if category == 'CHILD' or dependent_id:
+            # Child ticket
             if not dependent_id:
                 return Response({"error": "Dependent ID is required for child ticket."}, status=status.HTTP_400_BAD_REQUEST)
             try:
@@ -73,14 +86,14 @@ class TransactionViewSet(viewsets.ModelViewSet):
             except Dependent.DoesNotExist:
                 return Response({"error": "Dependent does not exist."}, status=status.HTTP_404_NOT_FOUND)
 
-            # Prevent duplicate tickets for the same child
             if Ticket.objects.filter(dependent=dependent).exists():
                 return Response({"error": "This dependent already has a ticket."}, status=status.HTTP_400_BAD_REQUEST)
 
             ticket = Ticket.objects.create(
                 ticket_number=ticket_number,
                 dependent=dependent,
-                organizer=organizer
+                organizer=organizer,
+                category=category
             )
             ticket_info = f"Child: {dependent.full_name} (Guardian ID: {dependent.guardian_id})"
 
@@ -88,30 +101,16 @@ class TransactionViewSet(viewsets.ModelViewSet):
             # Adult ticket
             if not personal_id:
                 return Response({"error": "Personal ID is required for adult ticket."}, status=status.HTTP_400_BAD_REQUEST)
-
-            # Prevent duplicate tickets for the same personal_id
             if Ticket.objects.filter(personal_id=personal_id).exists():
                 return Response({"error": "This personal ID has already been used."}, status=status.HTTP_400_BAD_REQUEST)
 
             ticket = Ticket.objects.create(
                 ticket_number=ticket_number,
                 personal_id=personal_id,
-                organizer=organizer
+                organizer=organizer,
+                category=category
             )
             ticket_info = f"Adult ID: {personal_id}"
-
-        # Get and validate amount
-        amount = request.data.get('amount')
-        if not amount:
-            return Response({"error": "Amount is required."}, status=status.HTTP_400_BAD_REQUEST)
-        try:
-            amount = Decimal(amount)
-        except Exception:
-            return Response({"error": "Invalid amount format."}, status=status.HTTP_400_BAD_REQUEST)
-
-        # Optional: apply child discount
-        if is_child:
-            amount = amount * Decimal('0.5')  # 50% discount for child ticket
 
         # Create transaction
         transaction = Transaction.objects.create(ticket=ticket, amount=amount)
@@ -125,17 +124,17 @@ class TransactionViewSet(viewsets.ModelViewSet):
         ticket.save()
 
         # Generate QR code
-        qr_data = f"Ticket Number: {ticket.ticket_number}\n{ticket_info}"
+        qr_data = f"Ticket Number: {ticket.ticket_number}\n{ticket_info}\nCategory: {category}\nPrice: {amount} RWF"
         qr = qrcode.make(qr_data)
         buffer = BytesIO()
         qr.save(buffer, format='PNG')
         buffer.seek(0)
 
-        # Send email to organizer
+        # Optional: send email
         try:
             email = EmailMessage(
                 subject='New Ticket Purchase',
-                body=f'A ticket has been purchased for {ticket_info}. Amount: {amount}',
+                body=f'A ticket has been purchased for {ticket_info}. Category: {category}, Amount: {amount} RWF',
                 from_email='noreply@eticketing.com',
                 to=[organizer.email],
             )

@@ -22,36 +22,44 @@ class Dependent(models.Model):
 
     @property
     def fingerprint(self):
-        """
-        Generate a unique fingerprint for the child,
-        combining name + DOB + guardian_id.
-        """
+        """Generate a unique fingerprint for the child (name + DOB + guardian ID)."""
         raw = f"{self.full_name.strip().lower()}|{self.date_of_birth.isoformat()}|{self.guardian_id}"
         return hashlib.sha256(raw.encode()).hexdigest()
 
     def is_under_16_on(self, date):
-        """
-        Check if the child is under 16 on a given date (event date).
-        """
+        """Check if the child is under 16 on a given date (event date)."""
         age = (date - self.date_of_birth).days // 365
         return age < 16
 
 
 class Ticket(models.Model):
+    CATEGORY_CHOICES = [
+        ('VVIP', 'VVIP'),
+        ('VIP', 'VIP'),
+        ('REGULAR', 'Regular'),
+        ('ADULT', 'Adult'),
+        ('CHILD', 'Child'),
+    ]
+
     ticket_number = models.CharField(max_length=16, unique=True)
     personal_id = models.CharField(max_length=16, blank=True, null=True)  # Adult ID
     dependent = models.ForeignKey(
         Dependent, on_delete=models.CASCADE, blank=True, null=True, related_name="tickets"
     )  # Child ticket
+    category = models.CharField(
+        max_length=10,
+        choices=CATEGORY_CHOICES,
+        default='REGULAR'  # Default to REGULAR for existing rows during migration
+    )
     is_paid = models.BooleanField(default=False)
     organizer = models.ForeignKey(Organizer, on_delete=models.CASCADE, related_name='tickets')
 
     def __str__(self):
         if self.personal_id:
-            return f"Ticket {self.ticket_number} for {self.personal_id}"
+            return f"Ticket {self.ticket_number} ({self.category}) for {self.personal_id}"
         elif self.dependent:
-            return f"Ticket {self.ticket_number} for Dependent {self.dependent.full_name}"
-        return f"Ticket {self.ticket_number}"
+            return f"Ticket {self.ticket_number} ({self.category}) for Dependent {self.dependent.full_name}"
+        return f"Ticket {self.ticket_number} ({self.category})"
 
 
 class Transaction(models.Model):
@@ -60,4 +68,4 @@ class Transaction(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"Transaction for {self.ticket.ticket_number}"
+        return f"Transaction for {self.ticket.ticket_number} ({self.ticket.category})"

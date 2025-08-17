@@ -1,7 +1,6 @@
 from rest_framework import serializers
 from .models import Ticket, Organizer, Transaction, Dependent
 
-
 class OrganizerSerializer(serializers.ModelSerializer):
     class Meta:
         model = Organizer
@@ -33,6 +32,7 @@ class TicketSerializer(serializers.ModelSerializer):
         required=False,
         allow_null=True
     )
+    category = serializers.CharField(required=True)  # Add category field
 
     class Meta:
         model = Ticket
@@ -40,6 +40,9 @@ class TicketSerializer(serializers.ModelSerializer):
 
 
 class TransactionSerializer(serializers.ModelSerializer):
+    ticket_number = serializers.CharField(source='ticket.ticket_number', read_only=True)
+    category = serializers.CharField(source='ticket.category', read_only=True)
+
     class Meta:
         model = Transaction
-        fields = ['id', 'amount', 'timestamp']  # changed from 'status' to 'timestamp' since your model has no status
+        fields = ['id', 'amount', 'timestamp', 'ticket_number', 'category']
